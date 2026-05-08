@@ -14,9 +14,10 @@ ES and PPO are implemented in PyTorch, and ES is based on the OpenAI ES paper [*
 
 ## ES Diagram
 ![es_diagram](images/es_diagram.png)
-comparison to genetic algorithm
+### Comparison to Genetic Algorithm
+Genetic Algorithm creates new parameters through parent crossover, while Evolution Strategies independently generates multiple parameter variations and updates in the direction of the variants that perform better.
 
-continue learning
+### Mirrored Noise Sampling
 
 ## Training Progress (ES plot)
 ![es plot](images/es_plot.png)
