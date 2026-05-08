@@ -13,6 +13,12 @@ ES and PPO are implemented in PyTorch, and ES is based on the OpenAI ES paper [*
 - Python 3.10.12
 
 ## ES Diagram
+![es_diagram](images/es_diagram.png)
 comparison to genetic algorithm
 
 continue learning
+
+## Training Progress (ES plot)
+![es plot](images/es_plot.png)
+
+## Conclusion
