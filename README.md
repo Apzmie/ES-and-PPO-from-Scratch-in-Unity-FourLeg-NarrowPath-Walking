@@ -18,6 +18,7 @@ ES and PPO are implemented in PyTorch, and ES is based on the OpenAI ES paper [*
 Genetic Algorithm creates new parameters through parent crossover, while Evolution Strategies independently generates multiple parameter variations and updates in the direction of the variants that perform better.
 
 ### Mirrored Noise Sampling
+When noise is added to the weights, the opposite sign is also applied to create symmetry, which helps determine which direction is better.
 
 ## Training Progress (ES plot)
 ![es plot](images/es_plot.png)
