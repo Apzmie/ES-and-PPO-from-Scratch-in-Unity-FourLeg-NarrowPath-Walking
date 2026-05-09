@@ -23,4 +23,6 @@ When noise is added to the weights, the opposite sign is also applied to create 
 ## Training Progress (ES plot)
 ![es plot](images/es_plot.png)
 
+The gradient norm is monitored during training to check whether training is progressing well. If the gradient norm shows little or no variation over time, it indicates that the optimization process has become inactive.
+
 ## Conclusion
