@@ -28,4 +28,6 @@ Although the gradient is a pseudo-gradient rather than an exact gradient compute
 
 The gradient norm is monitored during training to check whether training is progressing well. If the gradient norm shows little or no variation over time, it indicates that the optimization process has become inactive.
 
+Although the average reward during training appears to change very little in the early stage, it gradually increases over time, indicating that the model is still learning continuously even though the improvement is slow.
+
 ## Conclusion
