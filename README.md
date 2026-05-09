@@ -32,5 +32,7 @@ Although the average reward during training appears to change very little in the
 
 The model is saved based on both an increase in average reward and a small difference in rewards between agents, due to stable performance.
 
-
 ## Conclusion
+The agent was enabled to take baby steps using ES. To further training the pretrained model with PPO, The actor was initially frozen, and only the critic was optimized to learn the environment.
+After that, the actor was unfrozen and trained together with the critic, and the agent reached a basic walking level. Simple reward signals were sufficient for the agent to reach a basic walking level. When additional observations were added, the weights corresponding to the new observations were initialized to zero, preserving the prior behavior and enabling further training.
+
