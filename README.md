@@ -20,6 +20,9 @@ Genetic Algorithm creates new parameters through parent crossover, while Evoluti
 ### Mirrored Noise Sampling
 When noise is added to the weights, the opposite sign is also applied to create symmetry, which helps determine which direction is better.
 
+### Pseudo-Gradient Optimization
+Although the gradient is a pseudo-gradient rather than an exact gradient computed through backpropagation, Adam can still be used for parameter updates because the pseudo-gradient provides an estimate of the optimization direction.
+
 ## Training Progress (ES plot)
 ![es plot](images/es_plot.png)
 
