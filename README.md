@@ -30,5 +30,7 @@ The gradient norm is monitored during training to check whether training is prog
 
 Although the average reward during training appears to change very little in the early stage, it gradually increases over time, indicating that the model is still learning continuously even though the improvement is slow. The average rewards during training and testing are different because the training reward is averaged over multiple parameter variants, whereas the test reward is obtained by applying a single parameter to multiple agents and averaging their rewards. Even when multiple agents share the same neural network and environment, their behaviors differ because computers represent numbers using a finite number of bits (0s and 1s), which makes very small numerical errors. If these errors accumulate over time, they lead to differences in behavior. It is expected that these errors should be applied identically to all agents and lead to the same behavior. However, due to small differences in how parallel computations are executed, small numerical errors can differ between agents.
 
+The model is saved based on both an increase in average reward and a small difference in rewards between agents, due to stable performance.
+
 
 ## Conclusion
