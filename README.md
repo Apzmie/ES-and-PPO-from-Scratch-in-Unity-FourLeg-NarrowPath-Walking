@@ -5,7 +5,7 @@ ES and PPO are implemented in PyTorch, and ES is based on the OpenAI ES paper [*
 
 You can play against the FourLeg NarrowPath Walking AI directly in your browser [Play on itch.io](https://apzmie.itch.io/fourleg-narrowpath-walking-ai), on both PC and mobile devices. Due to a forced refresh problem and to focus more on reinforcement learning, mobile play will no longer be added in WebGL from the next project.
 
-<img src="images/narrowpath_walking.png" alt="narrowpath_walking" width="40%">
+<img src="images/narrowpath_walking.png" alt="narrowpath_walking" width="30%">
 
 ## Environment
 ### Unity
