@@ -3,7 +3,7 @@ Making an agent walk with legs using reinforcement learning in Unity was a real 
 
 ES and PPO are implemented in PyTorch, and ES is based on the OpenAI ES paper [*Evolution Strategies as a Scalable Alternative to Reinforcement Learning*](https://arxiv.org/pdf/1703.03864). For PPO, there are two improvements over the previous implementation: action selection for multiple agents is batch-processed for faster computation, and transition collection continues even after episode termination while waiting for other agents, with correct GAE computation. The observations and hyperparameters are partially based on the quadrupedal paper [*Learning to Walk in Minutes Using Massively Parallel Deep Reinforcement Learning*](https://arxiv.org/pdf/2109.11978).
 
-You can play against the target collector AI directly in your browser [Play on itch.io](https://apzmie.itch.io/fourleg-narrowpath-walking-ai), on both PC and mobile devices. Due to a forced refresh problem and to focus more on reinforcement learning, mobile play will no longer be added in WebGL
+You can play against the FourLeg NarrowPath Walking AI directly in your browser [Play on itch.io](https://apzmie.itch.io/fourleg-narrowpath-walking-ai), on both PC and mobile devices. Due to a forced refresh problem and to focus more on reinforcement learning, mobile play will no longer be added in WebGL from the next project.
 
 ## Environment
 ### Unity
