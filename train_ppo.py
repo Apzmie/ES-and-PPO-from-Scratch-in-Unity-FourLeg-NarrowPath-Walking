@@ -7,25 +7,40 @@ import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 
+
 class ActorCritic(nn.Module):
-    def __init__(self, state_dim, action_dim, hidden_dim=128, action_scale=1):
+    def __init__(self, state_dim, action_dim, hidden_dim=128):
         super().__init__()
         self.fc1 = nn.Linear(state_dim, hidden_dim)
         self.fc2 = nn.Linear(hidden_dim, hidden_dim)
         self.mean = nn.Linear(hidden_dim, action_dim)
         self.log_std = nn.Parameter(torch.ones(action_dim) * -2.0)
         self.critic = nn.Linear(hidden_dim, 1)
-        
-        self.action_scale = action_scale
 
     def forward(self, x):
-        x = torch.tanh(self.fc1(x))
-        x = torch.tanh(self.fc2(x))
-        mean = torch.tanh(self.mean(x)) * self.action_scale
-        mean = torch.clamp(mean, -1, 1)
+        x = torch.relu(self.fc1(x))
+        x = torch.relu(self.fc2(x))
+        mean = self.mean(x)
         std = self.log_std.exp().expand_as(mean)
         value = self.critic(x).squeeze(-1)
-        return mean, std, value      
+        return mean, std, value
+        
+    def sample(self, x):
+        mean, std, value = self.forward(x)
+        
+        dist = torch.distributions.Normal(mean, std)
+        z = dist.rsample()
+        action = torch.tanh(z)
+
+        log_prob = dist.log_prob(z)
+        log_prob = log_prob - torch.log(1 - action.pow(2) + 1e-6)
+        log_prob = log_prob.sum(dim=-1, keepdim=True)
+
+        return action, log_prob, value
+        
+    def deterministic(self, x):
+        mean, _, _ = self.forward(x)
+        return torch.tanh(mean)
                 
 
 class RolloutBuffer:
@@ -56,57 +71,20 @@ class RolloutBuffer:
         self.__init__()
         
         
-class Agent:
-    def __init__(self, state_dim, action_dim, lr=3e-4, gamma=0.99, lam=0.95, freeze_actor=False):
+class PPOAgent:
+    def __init__(self, state_dim, action_dim, lr=3e-4, gamma=0.99, lam=0.95):
         self.actor_critic = ActorCritic(state_dim, action_dim)
         self.gamma = gamma
         self.lam = lam
         
-        self.actor_critic.load_state_dict(torch.load("saved_model.pth"), strict=False)
-        
-        if freeze_actor:
-            for name, param in self.actor_critic.named_parameters():
-                if "critic" not in name:
-                    param.requires_grad = False
-        
-        self.optimizer = torch.optim.Adam(
-            filter(lambda p: p.requires_grad, self.actor_critic.parameters()), 
-            lr=lr
-        )
-        
-        ### match observation size if different
-        old_state_dim = 38     
-        old_model = ActorCritic(old_state_dim, action_dim)
-        old_model.load_state_dict(torch.load("saved_model.pth"), strict=False)
-
-        for name, param in old_model.state_dict().items():
-            if "fc1" not in name:
-                self.actor_critic.state_dict()[name].copy_(param)
-
-        old_w = old_model.fc1.weight.data
-        old_b = old_model.fc1.bias.data
-
-        self.actor_critic.fc1.weight.data[:, :old_state_dim] = old_w
-        self.actor_critic.fc1.bias.data = old_b
-        self.actor_critic.fc1.weight.data[:, old_state_dim:].zero_()
-        
+        #==========================================
+        #state_dict = torch.load("saved_model.pth")
+        #self.actor_critic.fc1.load_state_dict({"weight": state_dict["fc1.weight"], "bias": state_dict["fc1.bias"]})
+        #self.actor_critic.fc2.load_state_dict({"weight": state_dict["fc2.weight"], "bias": state_dict["fc2.bias"]})
+        #self.actor_critic.mean.load_state_dict({"weight": state_dict["mean.weight"], "bias": state_dict["mean.bias"]})
+        #==========================================
+          
         self.optimizer = torch.optim.Adam(self.actor_critic.parameters(), lr=lr)
-        ###
-
-    def select_action(self, state, train=True):
-        state = torch.FloatTensor(state)
-        with torch.no_grad():
-            mean, std, value = self.actor_critic(state)
-            if train:
-                dist = torch.distributions.Normal(mean, std)
-                action = dist.sample()
-                log_prob = dist.log_prob(action).sum(-1)
-            else:
-                action = mean
-                log_prob = None
-        
-        action = torch.clamp(action, -1.0, 1.0)
-        return action.cpu().numpy(), log_prob, value
         
     def compute_gaes(self, buffer):
         with torch.no_grad():
@@ -200,12 +178,13 @@ if __name__ == "__main__":
     spec = env.behavior_specs[behavior_name]
     state_dim = spec.observation_specs[0].shape[0]
     action_dim = spec.action_spec.continuous_size
-    agent = Agent(state_dim, action_dim, freeze_actor=False)
+    agent = PPOAgent(state_dim, action_dim)
+    #agent.actor.load_state_dict(torch.load("saved_model.pth"))
     buffer = RolloutBuffer()
     writer = SummaryWriter(log_dir="a/")
     
     target_transitions = 3072    # all transitions per one update
-    test_interval = 10
+    test_interval = 5
     test_max_step = 2000
 
     update_count = 0
@@ -222,20 +201,22 @@ if __name__ == "__main__":
             for agent_id in agent_ids:
                 if agent_id not in agent_buffers:
                     agent_buffers[agent_id] = RolloutBuffer()
-
-            states = np.array([decision_steps[aid].obs[0] for aid in agent_ids])
-            actions_array, log_probs_tensor, values_tensor = agent.select_action(states)
-            actions_tuple = ActionTuple(continuous=actions_array)
-            env.set_actions(behavior_name, actions_tuple)
+                    
+            states_tensor = torch.from_numpy(decision_steps.obs[0]).to(torch.float32)           
+            with torch.no_grad():
+                actions, log_probs, values = agent.actor_critic.sample(states_tensor)
+                  
+            actions = actions.cpu().numpy().astype(np.float32)
+            env.set_actions(behavior_name, ActionTuple(continuous=actions))           
 
         env.step()
         next_decision_steps, terminal_steps = env.get_steps(behavior_name)
 
         for i, agent_id in enumerate(agent_ids):
             state = states[i]
-            action = actions_array[i]
-            log_prob = log_probs_tensor[i]
-            value = values_tensor[i]
+            action = actions[i]
+            log_prob = log_probs[i]
+            value = values[i]
 
             if agent_id in terminal_steps:
                 reward = terminal_steps[agent_id].reward
@@ -286,16 +267,18 @@ if __name__ == "__main__":
                     t_agent_ids = t_decision_steps.agent_id
         
                     if len(t_agent_ids) > 0:
-                        t_states = t_decision_steps.obs[0]
-                        t_actions_array, _, _ = agent.select_action(t_states, train=False)
+                        t_states_tensor = torch.from_numpy(t_decision_steps.obs[0]).to(torch.float32)
+                        with torch.no_grad():
+                            t_actions = agent.actor_critic.deterministic(t_states_tensor)
+                        t_actions = t_actions.cpu().numpy().astype(np.float32)
             
                         for j, agent_id in enumerate(t_agent_ids):
                             idx = test_id_to_index[agent_id]
                             if test_episode_dones[idx]:
-                                t_actions_array[j] = np.zeros(action_dim)
-            
-                        test_env.set_actions(t_behavior_name, ActionTuple(continuous=t_actions_array))
+                                t_actions[j] = np.zeros(action_dim)
                         
+                        test_env.set_actions(t_behavior_name, ActionTuple(continuous=t_actions))  
+                       
                     test_env.step()
                     test_max_step_count += 1
                     t_decision_steps, t_terminal_steps = test_env.get_steps(t_behavior_name)
